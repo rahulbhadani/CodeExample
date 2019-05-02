@@ -4,4 +4,8 @@ Apr 27, 2019
 
 May 2, 2019
 -----------
-*NestedCube*: This folder contains a code example to animate the generation of smaller cubes inside a bigger cube in an orderly fashion.
+*NestedCube*: 
+	- This folder contains a code example to animate the generation of smaller cubes inside a bigger cube in an orderly fashion.
+
+StateMachine:
+	- ros_statemachine.slx: This folder contains a Simulink model to demonstrate implementation of state machine using stateflow to send ROS command. 
