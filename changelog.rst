@@ -1,6 +1,7 @@
-Apr 27, 2019
------------
-*newton_3d.m* : An example code in MATLAB to demonstrate Newton's method to find approximate roots of non linear system of equations.
+May 15, 2019
+------------
+*PyOOP*:
+    - This folder contains python code snippets that provides a few examples on Object Opriented programming in python for people familiar with C++
 
 May 2, 2019
 -----------
@@ -9,3 +10,8 @@ May 2, 2019
 
 StateMachine:
 	- ros_statemachine.slx: This folder contains a Simulink model to demonstrate implementation of state machine using stateflow to send ROS command. 
+
+Apr 27, 2019
+-----------
+*newton_3d.m* : An example code in MATLAB to demonstrate Newton's method to find approximate roots of non linear system of equations.
+
