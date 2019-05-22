@@ -1,5 +1,8 @@
 May 15, 2019
 ------------
+*MinkowskiSum*:
+    - I have included an over-simplified example to understand Minkowski sum. I will update this folder in the future with more detailed discussion.
+
 *PyOOP*:
     - This folder contains python code snippets that provides a few examples on Object Opriented programming in python for people familiar with C++
 
