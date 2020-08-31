@@ -6,7 +6,7 @@ do
   #echo "$entry" | cut -d'/' -f 3
   SUBSTR=$(echo $entry | cut -d'/' -f 3)
   
-  command=$(echo ffmpeg -framerate 1 -pattern_type glob -i \'${SUBSTR}/*.png\' ${SUBSTR}_SignalPos_SignalLen.mp4)
+  command=$(echo ffmpeg -framerate 1 -pattern_type glob -i \'${SUBSTR}/*.png\' ${SUBSTR}_SignalLen_SignalPos.mp4)
   echo $command >> ffpmeg
 done
 
