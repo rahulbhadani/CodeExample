@@ -3,12 +3,20 @@
 #include <cstring>
 #include <zmq.hpp>
 #include <unistd.h>
+#include <chrono>
+#include <cstdint>
+#include <cmath>
+uint64_t timeSinceEpochMillisec() 
+{
+  using namespace std::chrono;
+  return duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+}
 
 using namespace std;
 
 //  Convert C string to 0MQ string and send to socket
-inline static int
-s_send(void *socket, const double msg, int flags = 0) {
+inline static int s_send(void *socket, const double msg, int flags = 0) 
+{
     int rc;
     zmq_msg_t message;
     zmq_msg_init_size(&message, sizeof(double));
@@ -20,8 +28,8 @@ s_send(void *socket, const double msg, int flags = 0) {
 }
 
 //  Convert string to 0MQ string and send to socket
-inline static bool
-s_send (zmq::socket_t & socket, const double msg, int flags = 0) {
+inline static bool s_send (zmq::socket_t & socket, const double msg, int flags = 0) 
+{
 
     //zmq::message_t message(string.size());
     //memcpy (message.data(), string.data(), string.size());
@@ -32,8 +40,8 @@ s_send (zmq::socket_t & socket, const double msg, int flags = 0) {
     return (rc);
 }
 
-inline static int
-s_send(void *socket, const char *string, int flags = 0) {
+inline static int s_send(void *socket, const char *string, int flags = 0) 
+{
     int rc;
     zmq_msg_t message;
     zmq_msg_init_size(&message, strlen(string));
@@ -45,8 +53,8 @@ s_send(void *socket, const char *string, int flags = 0) {
 }
 
 //  Convert string to 0MQ string and send to socket
-inline static bool
-s_send (zmq::socket_t & socket, const std::string & string, int flags = 0) {
+inline static bool s_send (zmq::socket_t & socket, const std::string & string, int flags = 0) 
+{
 
     zmq::message_t message(string.size());
     memcpy (message.data(), string.data(), string.size());
@@ -56,8 +64,8 @@ s_send (zmq::socket_t & socket, const std::string & string, int flags = 0) {
 }
 
 //  Sends string as 0MQ string, as multipart non-terminal
-inline static int
-s_sendmore(void *socket, char *string) {
+inline static int s_sendmore(void *socket, char *string) 
+{
     int rc;
     zmq_msg_t message;
     zmq_msg_init_size(&message, strlen(string));
@@ -70,8 +78,8 @@ s_sendmore(void *socket, char *string) {
 }
 
 //  Sends string as 0MQ string, as multipart non-terminal
-inline static bool
-s_sendmore (zmq::socket_t & socket, const std::string & string) {
+inline static bool s_sendmore (zmq::socket_t & socket, const std::string & string) 
+{
 
     zmq::message_t message(string.size());
     memcpy (message.data(), string.data(), string.size());
@@ -99,14 +107,26 @@ std::string getCurrentTimestamp()
     return std::string(buffer);
 }
 
+
+
+
 int main (void)
 {
     //  Prepare our context and publisher
     void *context = zmq_ctx_new ();
     void *publisher = zmq_socket (context, ZMQ_PUB);
     zmq_bind (publisher, "tcp://*:4242");
+    
+    uint64_t old_t = timeSinceEpochMillisec();
+    uint64_t new_t = timeSinceEpochMillisec();
 
-    while (1) {
+
+
+    while (1) 
+    {
+        new_t = timeSinceEpochMillisec();
+        double s = sin( 10.0*double(new_t - old_t ) );
+        cout << "S "<< s << endl;
         //  Write two messages, each with an envelope and content
         char char_array[32];
         std::snprintf(char_array, sizeof(char_array), "%f", 121212.121);
@@ -114,7 +134,7 @@ int main (void)
         //s_sendmore (publisher, "A");
         //s_send (publisher, char_array);
         s_sendmore (publisher, "B");
-        std::snprintf(char_array, sizeof(char_array), "%f", 3433.33);
+        std::snprintf(char_array, sizeof(char_array), "%f", s);
         s_send (publisher, char_array);
         cout << "Current Time is "<< getCurrentTimestamp() <<endl;
         sleep (1);
