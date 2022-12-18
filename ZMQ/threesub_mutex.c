@@ -61,9 +61,9 @@ int main()
     zmq_connect(socket, "tcp://localhost:4242");
 
     // Use the setsockopt method to subscribe to the three topics
-    zmq_setsockopt(socket, ZMQ_SUBSCRIBE, "topic1", 6);
-    zmq_setsockopt(socket, ZMQ_SUBSCRIBE, "topic2", 6);
-    zmq_setsockopt(socket, ZMQ_SUBSCRIBE, "topic3", 6);
+    zmq_setsockopt(socket, ZMQ_SUBSCRIBE, "100", 3);
+    zmq_setsockopt(socket, ZMQ_SUBSCRIBE, "101", 3);
+    zmq_setsockopt(socket, ZMQ_SUBSCRIBE, "102", 3);
 
     // Start the threads to receive messages from the three topics
     pthread_t topic1_thread;
@@ -84,8 +84,8 @@ int main()
 
                 // Discard the topic name and print the actual message
                 zmq_msg_t actual_message;
-                zmq_msg_init_size(&actual_message, zmq_msg_size(&message) - 6);
-                memcpy(zmq_msg_data(&actual_message), (char*)zmq_msg_data(&message) + 6, zmq_msg_size(&message) - 6);
+                zmq_msg_init_size(&actual_message, zmq_msg_size(&message) - 3);
+                memcpy(zmq_msg_data(&actual_message), (char*)zmq_msg_data(&message) + 3, zmq_msg_size(&message) - 3);
                 char *message_str = (char*)zmq_msg_data(&actual_message);
                 printf("Received message from topic1: %s\n", message_str);
                 zmq_msg_close(&actual_message);
@@ -101,8 +101,8 @@ int main()
 
                 // Discard the topic name and print the actual message
                 zmq_msg_t actual_message;
-                zmq_msg_init_size(&actual_message, zmq_msg_size(&message) - 6);
-                memcpy(zmq_msg_data(&actual_message), (char*)zmq_msg_data(&message) + 6, zmq_msg_size(&message) - 6);
+                zmq_msg_init_size(&actual_message, zmq_msg_size(&message) - 3);
+                memcpy(zmq_msg_data(&actual_message), (char*)zmq_msg_data(&message) + 3, zmq_msg_size(&message) - 3);
                 char *message_str = (char*)zmq_msg_data(&actual_message);
                 printf("Received message from topic2: %s\n", message_str);
                 zmq_msg_close(&actual_message);
@@ -118,8 +118,8 @@ int main()
 
                 // Discard the topic name and print the actual message
                 zmq_msg_t actual_message;
-                zmq_msg_init_size(&actual_message, zmq_msg_size(&message) - 6);
-                memcpy(zmq_msg_data(&actual_message), (char*)zmq_msg_data(&message) + 6, zmq_msg_size(&message) - 6);
+                zmq_msg_init_size(&actual_message, zmq_msg_size(&message) - 3);
+                memcpy(zmq_msg_data(&actual_message), (char*)zmq_msg_data(&message) + 3, zmq_msg_size(&message) - 3);
                 char *message_str = (char*)zmq_msg_data(&actual_message);
                 printf("Received message from topic3: %s\n", message_str);
             zmq_msg_close(&actual_message);
