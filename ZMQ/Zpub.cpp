@@ -6,6 +6,43 @@
 #include <chrono>
 #include <cstdint>
 #include <cmath>
+#include <thread>
+#include <math.h>
+#include <type_traits>
+
+void preciseSleep(double seconds)
+{
+    using namespace std;
+    using namespace std::chrono;
+
+    static double estimate = 5e-3;
+    static double mean = 5e-3;
+    static double m2 = 0;
+    static int64_t count = 1;
+
+    while (seconds > estimate) {
+        auto start = high_resolution_clock::now();
+        this_thread::sleep_for(milliseconds(1));
+        auto end = high_resolution_clock::now();
+
+        double observed = (end - start).count() / 1e9;
+        seconds -= observed;
+
+        ++count;
+        double delta = observed - mean;
+        mean += delta / count;
+        m2   += delta * (observed - mean);
+        double stddev = sqrt(m2 / (count - 1));
+        estimate = mean + stddev;
+    }
+
+    // spin lock
+    auto start = high_resolution_clock::now();
+    auto spinNs = int64_t(seconds * 1e9);
+    auto delay = nanoseconds(spinNs);
+    while (high_resolution_clock::now() - start < delay);
+}
+
 uint64_t timeSinceEpochMillisec() 
 {
   using namespace std::chrono;
@@ -110,7 +147,7 @@ std::string getCurrentTimestamp()
 
 
 
-int main (void)
+int main (int argc, char **argv)
 {
     //  Prepare our context and publisher
     void *context = zmq_ctx_new ();
@@ -119,8 +156,6 @@ int main (void)
     
     uint64_t old_t = timeSinceEpochMillisec();
     uint64_t new_t = timeSinceEpochMillisec();
-
-
 
     while (1) 
     {
@@ -133,11 +168,11 @@ int main (void)
 
         //s_sendmore (publisher, "A");
         //s_send (publisher, char_array);
-        s_sendmore (publisher, "B");
+        s_sendmore (publisher, argv[1]);
         std::snprintf(char_array, sizeof(char_array), "%f", s);
         s_send (publisher, char_array);
         cout << "Current Time is "<< getCurrentTimestamp() <<endl;
-        sleep (1);
+        preciseSleep(1.0);
     }
     //  We never get here, but clean up anyhow
     zmq_close (publisher);
