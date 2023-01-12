@@ -1,9 +1,18 @@
+/* ---------------------- ZMQ Publisher -------------------------------/
+ *
+ * Author: Rahul Bhadani
+ *
+ * ZMQ subscriber on a topic, and port number and host
+ * 
+ * -------------------------------------------------------------------*/
 #include <iostream>
 #include <string>
 #include <cstring>
 #include <zmq.hpp>
 #include <unistd.h>
+#include <chrono>
 
+using namespace std::chrono;
 using namespace std;
 
 //  Receive 0MQ string from socket and convert into C string
@@ -29,8 +38,7 @@ s_recv(void *socket, int flags = 0)
 }
 
 //  Receive 0MQ string from socket and convert into string
-inline static std::string
-s_recv (zmq::socket_t & socket, int flags = 0) 
+inline static std::string s_recv (zmq::socket_t & socket, int flags = 0) 
 {
     //cout << "2"<<endl;
 
@@ -55,32 +63,58 @@ inline static bool s_recv(zmq::socket_t & socket, std::string & ostring, int fla
 
 int main (int argc, char **argv)
 {
-    //  Prepare our context and subscriber
-    void *context = zmq_ctx_new ();
-    void *subscriber = zmq_socket (context, ZMQ_SUB);
-    //zmq_connect (subscriber, strcat("tcp://localhost:", argv[2]));
-    zmq_connect (subscriber, "tcp://localhost:4243");
-    zmq_setsockopt (subscriber, ZMQ_SUBSCRIBE, argv[1], strlen(argv[1]));
+    // Get the current time
+    auto start = high_resolution_clock::now();
+
+    
+    std::string topic_name(argv[1]);
+
+    int port;
+    std::stringstream arg1_stream(argv[2]);
+    arg1_stream >> port;
+
+    std::string host(argv[3]);
+
+    zmq::context_t context(1);
+    zmq::socket_t subscriber(context, ZMQ_SUB);
+
+    std::string address = "tcp://"+  host + ":" + string(argv[2]);
+
+    subscriber.connect(address);
+    subscriber.setsockopt(ZMQ_SUBSCRIBE, topic_name.c_str(), topic_name.size());
+
+    int timeout = 0.05;
+
+    subscriber.setsockopt(ZMQ_RCVTIMEO, &timeout, sizeof(timeout));
 
     while (1) 
     {
+
         //  Read envelope with address
-        char *address = s_recv (subscriber);
-        cout <<" Address"<<address<<endl;
+        //string address = s_recv (subscriber);
+       // cout <<" Address"<<address<<endl;
         //  Read message contents
-        char *contents = s_recv (subscriber);
-        cout <<" Content"<<contents<<endl;
+        string contents = s_recv (subscriber);
+	if(contents == topic_name)
+		continue;
+     //   cout <<" Content"<<contents<<endl;
 //        cout << contents<<endl;
-        double message_value = stod(contents);
-        cout << message_value;
+	if(contents.size() == 0)
+		continue;
+        
+	auto elapsed = high_resolution_clock::now() - start;
+        double t = duration_cast<duration<double>>(elapsed).count();
+        //cout <<"Content= "<<contents<<endl;
+	double message_value = stod(contents);
+        cout <<"Time: "<<t<<", Data:"<< message_value;
         cout<<endl<<endl;
         //double message_value = std::stod(*contents);
         //printf ("[%s] %f\n", address, message_value);
-        free (address);
-        free (contents);
+    //    free (address);
+    //    free (contents);
     }
     //  We never get here, but clean up anyhow
-    zmq_close (subscriber);
-    zmq_ctx_destroy (context);
+  //  zmq_close (subscriber);
+  //  zmq_ctx_destroy (context);
     return 0;
 }

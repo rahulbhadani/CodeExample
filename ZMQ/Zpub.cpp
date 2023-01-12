@@ -1,3 +1,15 @@
+/* ---------------------- ZMQ Publisher -------------------------------/
+ * Author: Rahul Bhadani
+ *
+ * ZMQ Publisher on a topic, and port number with a specified sample time
+ * 
+ *
+ *
+ *
+ *
+ * ------------------------------------------------------------------*/
+
+
 #include <iostream>
 #include <string>
 #include <cstring>
@@ -9,6 +21,11 @@
 #include <thread>
 #include <math.h>
 #include <type_traits>
+#include <sstream>
+#include <thread>
+using namespace std::chrono;
+
+using namespace std;
 
 void preciseSleep(double seconds)
 {
@@ -49,7 +66,6 @@ uint64_t timeSinceEpochMillisec()
   return duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 }
 
-using namespace std;
 
 //  Convert C string to 0MQ string and send to socket
 inline static int s_send(void *socket, const double msg, int flags = 0) 
@@ -68,8 +84,6 @@ inline static int s_send(void *socket, const double msg, int flags = 0)
 inline static bool s_send (zmq::socket_t & socket, const double msg, int flags = 0) 
 {
 
-    //zmq::message_t message(string.size());
-    //memcpy (message.data(), string.data(), string.size());
     zmq::message_t message(sizeof(double));
     memcpy(message.data(), &msg, sizeof(double));
 
@@ -77,7 +91,7 @@ inline static bool s_send (zmq::socket_t & socket, const double msg, int flags =
     return (rc);
 }
 
-inline static int s_send(void *socket, const char *string, int flags = 0) 
+/*inline static int s_send(void *socket, const char *string, int flags = 0) 
 {
     int rc;
     zmq_msg_t message;
@@ -88,7 +102,7 @@ inline static int s_send(void *socket, const char *string, int flags = 0)
     zmq_msg_close(&message);
     return (rc);
 }
-
+*/
 //  Convert string to 0MQ string and send to socket
 inline static bool s_send (zmq::socket_t & socket, const std::string & string, int flags = 0) 
 {
@@ -149,33 +163,54 @@ std::string getCurrentTimestamp()
 
 int main (int argc, char **argv)
 {
-    //  Prepare our context and publisher
-    void *context = zmq_ctx_new ();
-    void *publisher = zmq_socket (context, ZMQ_PUB);
-    zmq_bind (publisher, "tcp://*:4242");
     
-    uint64_t old_t = timeSinceEpochMillisec();
-    uint64_t new_t = timeSinceEpochMillisec();
+    cout << "Usage: ./a.out <topic_name> <port> <sample_time>"<<endl<<endl;
+	
+    // Get the current time
+    auto start = high_resolution_clock::now();
+	
+    //  Prepare our context and publisher
+    //void *context = zmq_ctx_new ();
+    //void *publisher = zmq_socket (context, ZMQ_PUB);
+	
+    zmq::context_t context(1);
+    zmq::socket_t publisher(context, ZMQ_PUB);    
+
+    std::string topic_name(argv[1]);
+
+    int port;
+    std::stringstream arg1_stream(argv[2]);
+    arg1_stream >> port;
+
+    double sample_time;
+    std::stringstream arg2_stream(argv[3]);
+    arg2_stream >> sample_time;
+
+
+    cout << "Sample Time "<< sample_time<<endl;
+
+    string address = "tcp://*:" + string(argv[2]);
+
+    publisher.bind(address);
 
     while (1) 
     {
-        new_t = timeSinceEpochMillisec();
-        double s = sin( 10.0*double(new_t - old_t ) );
-        cout << "S "<< s << endl;
-        //  Write two messages, each with an envelope and content
-        char char_array[32];
-        std::snprintf(char_array, sizeof(char_array), "%f", 121212.121);
+        auto elapsed = high_resolution_clock::now() - start;
+	double t = duration_cast<duration<double>>(elapsed).count();
 
-        //s_sendmore (publisher, "A");
-        //s_send (publisher, char_array);
-        s_sendmore (publisher, argv[1]);
-        std::snprintf(char_array, sizeof(char_array), "%f", s);
-        s_send (publisher, char_array);
-        cout << "Current Time is "<< getCurrentTimestamp() <<endl;
-        preciseSleep(1.0);
+	double s = sin(t);
+	
+        std::cout << "sin(" << t << ") = " << std::sin(t) << std::endl;
+        //  Write two messages, each with an envelope and content
+        char buffer[32];
+
+        s_sendmore (publisher, topic_name);
+        std::snprintf(buffer, sizeof(buffer), "%f", s);
+	s_send(publisher,  const_cast<char*>(buffer));
+        preciseSleep(sample_time);
     }
     //  We never get here, but clean up anyhow
     zmq_close (publisher);
-    zmq_ctx_destroy (context);
+    //zmq_ctx_destroy (context);
     return 0;
 }
