@@ -24,8 +24,6 @@
 #include <sstream>
 #include <thread>
 
-#include<control_toolbox/pid.h>
-
 using namespace std::chrono;
 
 using namespace std;
@@ -186,6 +184,59 @@ class PIDController
         double last_error;
         time_point<high_resolution_clock> last_time;
 };
+
+class ZPIDController
+{
+    public:
+        ZPIDController(double p, double i, double d, t): P(p), I(i), D(d), T(t))
+        {
+            N = 0;
+
+        }
+
+        double compute(double reference, double measurement)
+        {
+            double Tz;
+            double error = reference - measurement;
+
+            /**********/
+
+            /* TODO: Create an x vector of size 32 and always store latest 32 points */
+
+
+            /***********/
+
+            std::complex<double> z = std::polar(1.0, 2 * M_PI / N);
+            std::complex<double> Tz;
+            for (int k = 0; k < N; k++) 
+            {
+                X[k] = 0;
+                for (int i = 0; i < N; i++) 
+                {
+                // cout << std::pow(z, -i * k) <<endl;
+                    X[k] += x[i] * std::pow(z, -i * k);
+
+                
+                }
+                Tz = (( P + ((I*T)/2) + (D/T) )*(z*z) +  ( -P + ((I*T)/2) - ((2*D)/T) )*z  + (D/T) )/ ( (z*z) - z);
+                U[k] = Tz*X[k];
+            }
+        }
+    private:
+
+        double P, I, D;
+        
+        double T; // sample_time
+
+        std::vector<double> x[32];
+        
+        double N;
+
+        std::complex<double> X[32];
+        std::complex<double> U[32];
+
+};
+
 
 int main (int argc, char **argv)
 {
