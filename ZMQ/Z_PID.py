@@ -5,11 +5,16 @@
 import zmq
 import time
 import numpy as np
-from DigitalPID import DigitalPID
+from ZTF import ZTF
+from ZTF import PID
+import ctypes
+
+libc = ctypes.CDLL('libc.so.6')
+
 
 class ZMQPublisher:
     def __init__(self, pub_topic='pubtopic', pub_port = 5555, sub_host="127.0.0.1", sub_topic = 'subtopic', 
-            sub_port='5556', P = 100.0, I = 1.0, D = 1.0):
+            sub_port='5556', P = 100.0, I = 1.0, D = 1.0, N = 10, Ts = 0.05):
 
         self.pub_port = pub_port
         self.pub_topic = pub_topic
@@ -38,10 +43,23 @@ class ZMQPublisher:
         self.P = P
         self.I = I
         self.D = D
-        self.N = 20
-        self.Ts = 0.05
+        self.N = N
+        self.Ts = Ts
 
-        self.PID = DigitalPID(self.P, self.I, self.D, self.Ts, self.N)
+        print("P = {}".format(self.P))
+        print("I = {}".format(self.I))
+        print("D = {}".format(self.D))
+        print("N = {}".format(self.N))
+        print("Ts = {}".format(self.Ts))
+
+
+        self.pid = PID(self.P, self.I, self.D, self.N, self.Ts)
+
+        # self.ZTF1 = ZTF([self.P], [1.0])
+        # self.ZTF2 = ZTF([self.I*self.Ts], [-1.0, 1.0])
+        # self.ZTF3 = ZTF([-self.D*self.N, self.D*self.N], [(self.N*self.Ts- 1), 1])
+
+
 
         self.t0 = time.time_ns() / (10 ** 9) 
 
@@ -51,6 +69,7 @@ class ZMQPublisher:
         topic = None
         message = None
         while True:
+            t_now_main = time.time_ns() / (10 ** 9)
             # timeout in miliseconds
             if self.poller.poll(timeout=self.Ts*1000):
                 L = self.subscriber.recv_string(zmq.DONTWAIT).split()
@@ -79,14 +98,21 @@ class ZMQPublisher:
                 self.current_data = self.previous_data
 
             t_now = time.time_ns() / (10 ** 9)
-            F = np.sin( t_now - self.t0)
+            # F = np.sin( t_now - self.t0)
             error = self.reference - self.current_data
-            control_signal = self.PID.control(error)
-            u = F + control_signal
+            control_signal = self.pid.processing(error)
+            u = control_signal
 
             self.publisher.send_string("{} {}".format(self.pub_topic, u))
-            time.sleep(self.Ts)
+            t_now_main2 = time.time_ns() / (10 ** 9)
+           
+
+            time_to_sleep_inmicrosec = (self.Ts - (t_now_main2 - t_now_main))*1e6 
+            if(time_to_sleep_inmicrosec > 0):
+                libc.usleep( int(time_to_sleep_inmicrosec))
+            #time.sleep(self.Ts)
 
 
-ZPUB = ZMQPublisher(pub_topic = 'input', pub_port = 4848, sub_host='localhost', sub_topic = 'angle', sub_port = 4849)
+ZPUB = ZMQPublisher(pub_topic = 'input', pub_port = 4848, sub_host='localhost', sub_topic = 'angle', sub_port = 4849, 
+        P = 12.2285752621432, I = 7.40871870543199, D = 4.88097496311707, N = 37.0569659936971, Ts = 0.05 )
 ZPUB.control()
