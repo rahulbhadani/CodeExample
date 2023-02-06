@@ -1,3 +1,7 @@
 .ipynb_checkpoints/
 *.mp4
 ExhaustiveSearchMat/*/
+__pycache__
+*slxc
+*_grt_rtw*
+slprj/
